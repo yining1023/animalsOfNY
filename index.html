@@ -1,0 +1,103 @@
+<html>
+<head>
+	<title>Animals of New York</title>
+	<link rel="stylesheet" type="text/css" href="css/styles.css">
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script>
+	var users=[];
+
+	var socket = io.connect('http://45.55.228.139:8080/');
+
+	var currentUsers = [];
+	var chatHistory = '';
+
+	socket.on('goodbye',function(data) {
+		console.log("Server said goodbye: " + data);
+	});
+
+	socket.on('chatmessage', function (data) {
+		document.getElementById("inner_" + data.userId).innerHTML = data.message;
+		document.getElementById('message').value="";
+	});
+
+	socket.on('clear', function (data) {
+		document.getElementById("inner_"+data).innerHTML = "";
+
+	});
+
+	socket.on('userListUpdated', function(newUserList) {
+		//detect new users
+		var newUsers = newUserList.filter(function(u) {
+			//create an array of IDs of all the current users
+			var currentIDs = currentUsers.map(function(u2) { return u2.id;});
+			//return only those users whose IDs are not present in currentIDs
+			return (currentIDs.indexOf(u.id) < 0);
+		});
+
+		// //delete disconnected users
+		// for (var i = 0; i < currentUsers.length; i++) {
+		// 	//create an array of IDs of all the users from the list
+		// 	var newIDs = newUserList.map(function(u2) { return u2.id;});
+		// 	if(newIDs.indexOf(currentUsers[i].id) < 0) {
+		// 		$(currentUsers[i].id).remove();
+		//  		currentUsers.splice(i, 1);
+		//  	}
+		//  };
+
+		socket.on('disconnect', function (data) {
+		console.log("a user disconnected " + data);
+	
+			document.getElementById(data).innerHTML = "";
+		});
+
+		//create element for eevery user
+		newUsers.forEach(function(u){
+			$('.avatars').append('<div id="' + u.id +'" style="position: absolute; top: ' + u.y + '%; left: ' + u.x +'%;"></div>');
+			//append image
+			$('#' + u.id).append('<img src="' + u.img + '.png"></img>');
+			$('#' + u.id).append('<div id="inner_' + u.id + '" class="speech-bubble">' + u.chatHistory +'</div>');
+		});
+
+		//append newUsers to currentUsers and assign that value to current Users
+		currentUsers = currentUsers.concat(newUsers);
+
+	});
+
+	window.addEventListener('load',function () {
+		var animal = prompt("Which animal of New York are you? Cat, pigeon, cockroach, squirrel or rat? Don't be shy, type it in!");
+
+		socket.emit('avataradded', {img: animal.toLowerCase(), chatHistory: chatHistory});
+
+		document.getElementById("message").addEventListener("keypress", function myFunction(event){
+			var x = event.which;
+			chatHistory += String.fromCharCode(x);
+			socket.emit('chatmessage', chatHistory);
+		});
+		document.getElementById("message").addEventListener("keydown", function myFunction(event){
+			var x = event.which;
+			if (x === 8)
+				chatHistory = chatHistory.substring(0, chatHistory.length-1);
+			else if (x === 13)
+				chatHistory += "<br/>";
+			socket.emit('chatmessage', chatHistory);
+		});
+
+		document.getElementById("trash").addEventListener("click",function(){
+			chatHistory = '';
+			socket.emit('clear')
+		});
+
+
+	});
+
+</script>
+
+</head>
+<body>
+	<div class="avatars"></div>
+		
+	<input type="text" id="message" name="message" ></input>
+	<img id="trash" src="trash.png" alt="trash"></img>
+</body>
+</html>
