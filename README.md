@@ -3,7 +3,7 @@ This is a chating room application I created on the Live Web class at ITP with D
 Please visit the url here: </br>
 45.55.228.139:8080/index.html</br>
 
-Features:</br></br>
+Features:</br>
 
 -instant send</br>
 -random position of avatars</br>
